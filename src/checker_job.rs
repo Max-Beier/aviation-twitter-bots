@@ -37,6 +37,7 @@ pub async fn checker_job(
     let x_api = XApi::new_and_authorize(
         secrets.get("X_CLIENT_ID").unwrap(),
         secrets.get("X_CLIENT_SECRET").unwrap(),
+        &pool,
     )
     .await;
 
@@ -86,6 +87,13 @@ pub async fn checker_job(
     }
 
     let flight = flights.first().unwrap();
+
+    x_api
+        .tweet(format!(
+            "Current highest flight: {} at FL{}.",
+            flight.ident, flight.altitude
+        ))
+        .await;
 
     Ok(())
 }

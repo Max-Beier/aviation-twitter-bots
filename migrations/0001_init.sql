@@ -2,7 +2,6 @@ CREATE TYPE AuthProvider AS ENUM ('X');
 
 CREATE TABLE Sessions (
     provider AuthProvider NOT NULL,
-    refresh_token TEXT NOT NULL,
     access_token TEXT NOT NULL
 );
 
