@@ -9,7 +9,6 @@ use apalis::{
 
 use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
-use tower::ServiceBuilder;
 
 use crate::checker_job::{checker_job, Checker};
 
@@ -23,13 +22,13 @@ impl shuttle_runtime::Service for BotService {
     async fn bind(self, _addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
         let storage: PostgresStorage<Checker> = PostgresStorage::new(self.pool);
 
-        let schedule = Schedule::from_str("0 */10 * ? * * *").expect("Couldn't start scheduler.");
-        let service = ServiceBuilder::new().service(checker_job);
+        let schedule = Schedule::from_str("*/30 * * ? * * *").expect("Couldn't start scheduler.");
 
         let worker = WorkerBuilder::new("cron-worker")
             .with_storage(storage.clone())
             .stream(CronStream::new(schedule).into_stream())
-            .build_fn(service.clone());
+            .data((storage, self.secrets))
+            .build_fn(checker_job);
 
         Monitor::<TokioExecutor>::new()
             .register(worker)

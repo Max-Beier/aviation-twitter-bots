@@ -6,8 +6,11 @@ edition = "2021"
 [dependencies]
 apalis = { version = "0.5.3", features = ["cron", "retry", "postgres"] }
 chrono = { version = "0.4.38", features = ["serde", "clock"] }
+oauth2 = "4.4.2"
+reqwest = { version = "0.12.5", features = ["json"] }
 serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.118"
 shuttle-runtime = "0.46.0"
 shuttle-shared-db = { version = "0.46.0", features = ["postgres", "sqlx"] }
 sqlx = { version = "0.7.4", features = ["runtime-tokio-native-tls", "postgres"] }
-tower = "0.4.13"
+warp = "0.3.7"
