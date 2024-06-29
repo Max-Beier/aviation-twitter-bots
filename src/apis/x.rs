@@ -1,9 +1,7 @@
-use std::{
-    io::{BufRead, BufReader, Write},
-    net::TcpListener,
-    sync::mpsc,
-    thread,
-};
+use shuttle_runtime::tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+use shuttle_runtime::tokio::sync::mpsc;
+use shuttle_runtime::tokio::task;
+use shuttle_runtime::tokio::{io::BufReader, net::TcpListener};
 
 use oauth2::{
     basic::BasicClient, reqwest::async_http_client, AuthUrl, AuthorizationCode, ClientId,
@@ -41,8 +39,10 @@ impl XApi {
         let auth_client =
             BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
                 .set_redirect_uri(
-                    RedirectUrl::new("http://localhost:8000/callback".to_string())
-                        .expect("Invalid redirect URL"),
+                    RedirectUrl::new(
+                        "http://earth-highest-aircraft.shuttleapp.rs/callback".to_string(),
+                    )
+                    .expect("Invalid redirect URL"),
                 );
 
         let sessions: Vec<Session> =
@@ -74,46 +74,47 @@ impl XApi {
 
         println!("Browse to: {}", auth_url);
 
-        let (tx, rx) = mpsc::channel();
+        let (tx, mut rx) = mpsc::channel(1);
 
-        thread::spawn(move || {
-            let listener = TcpListener::bind("localhost:8000/callback").unwrap();
+        task::spawn(async move {
+            let listener = TcpListener::bind("0.0.0.0:8000").await.unwrap();
 
-            if let Ok((mut stream, _)) = listener.accept() {
+            if let Ok((mut stream, _)) = listener.accept().await {
                 let mut reader = BufReader::new(&mut stream);
 
                 let mut request_line = String::new();
-                reader.read_line(&mut request_line).unwrap();
+                reader.read_line(&mut request_line).await.unwrap();
 
-                let redirect_url = request_line.split_whitespace().nth(1).unwrap();
-                let url =
-                    Url::parse(&("http://localhost/callback".to_string() + redirect_url)).unwrap();
+                if request_line.starts_with("GET /callback") {
+                    let redirect_url = request_line.split_whitespace().nth(1).unwrap();
+                    let url = Url::parse(&("http://localhost".to_string() + redirect_url)).unwrap();
 
-                let code = url
-                    .query_pairs()
-                    .find(|(key, _)| key == "code")
-                    .map(|(_, code)| AuthorizationCode::new(code.into_owned()))
-                    .expect("Code not found.");
+                    let code = url
+                        .query_pairs()
+                        .find(|(key, _)| key == "code")
+                        .map(|(_, code)| AuthorizationCode::new(code.into_owned()))
+                        .expect("Code not found.");
 
-                let state = url
-                    .query_pairs()
-                    .find(|(key, _)| key == "state")
-                    .map(|(_, state)| CsrfToken::new(state.into_owned()))
-                    .expect("State not found.");
+                    let state = url
+                        .query_pairs()
+                        .find(|(key, _)| key == "state")
+                        .map(|(_, state)| CsrfToken::new(state.into_owned()))
+                        .expect("State not found.");
 
-                let message = "DONE";
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{}",
-                    message.len(),
-                    message
-                );
-                stream.write_all(response.as_bytes()).unwrap();
+                    let message = "DONE";
+                    let response = format!(
+                        "HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{}",
+                        message.len(),
+                        message
+                    );
+                    stream.write_all(response.as_bytes()).await.unwrap();
 
-                tx.send((code, state)).unwrap();
+                    tx.send((code, state)).await.unwrap();
+                }
             }
         });
 
-        let (code, _state) = rx.recv().unwrap();
+        let (code, _state) = rx.recv().await.unwrap();
 
         let tokens = auth_client
             .exchange_code(code)
