@@ -127,8 +127,9 @@ impl XApi {
 
         let access_token = tokens.access_token().secret().to_string();
 
-        sqlx::query("INSERT INTO Sessions (provider, access_token) VALUES ($1, $2);")
+        sqlx::query("INSERT INTO Sessions (provider, bot_type, access_token) VALUES ($1, $2, $3);")
             .bind(AuthProvider::X)
+            .bind(bot_type)
             .bind(&access_token)
             .execute(pool)
             .await

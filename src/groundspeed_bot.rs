@@ -46,7 +46,7 @@ pub async fn groundspeed_job(
     let ranking_count = 3;
 
     let mut flights: Vec<Flight> = vec![];
-    let mut search_gspd = 680;
+    let mut search_gspd = 650;
 
     while flights.len() < ranking_count {
         flights = aero_api.get_flights_above_gspd(search_gspd).await.unwrap();
