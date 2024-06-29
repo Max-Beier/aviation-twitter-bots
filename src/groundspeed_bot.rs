@@ -1,10 +1,12 @@
+use std::time::Duration;
+
 use apalis::{
     postgres::PostgresStorage,
     prelude::{Data, Job},
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use shuttle_runtime::{Error, SecretStore};
+use shuttle_runtime::{tokio::time::sleep, Error, SecretStore};
 
 use crate::{
     apis::{AeroApi, XApi},
@@ -31,6 +33,9 @@ pub async fn groundspeed_job(
     _job: Checker,
     data: Data<(PostgresStorage<Checker>, SecretStore)>,
 ) -> Result<(), Error> {
+    // Need for first time oauth
+    // sleep(Duration::from_secs(60)).await;
+
     let pool = data.0.pool();
     let secrets = &data.1;
 
