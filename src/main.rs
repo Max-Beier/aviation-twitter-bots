@@ -2,10 +2,12 @@ use bot_service::BotService;
 use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
 
+mod altitude_bot;
 mod apis;
 mod bot_service;
-mod checker_job;
+mod groundspeed_bot;
 mod types;
+mod utils;
 
 #[shuttle_runtime::main]
 async fn shuttle_main(

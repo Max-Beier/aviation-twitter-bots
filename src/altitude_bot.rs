@@ -8,7 +8,8 @@ use shuttle_runtime::{Error, SecretStore};
 
 use crate::{
     apis::{AeroApi, XApi},
-    types::Flight,
+    types::{BotType, Flight},
+    utils::{format_tweet, FormatOrder},
 };
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +27,7 @@ impl Job for Checker {
     const NAME: &'static str = "checker::CheckerJob";
 }
 
-pub async fn checker_job(
+pub async fn altitude_job(
     _job: Checker,
     data: Data<(PostgresStorage<Checker>, SecretStore)>,
 ) -> Result<(), Error> {
@@ -35,8 +36,9 @@ pub async fn checker_job(
 
     let aero_api = AeroApi::new(secrets.get("AERO_API_KEY").unwrap());
     let x_api = XApi::new_and_authorize(
-        secrets.get("X_CLIENT_ID").unwrap(),
-        secrets.get("X_CLIENT_SECRET").unwrap(),
+        secrets.get("X_ALT_CLIENT_ID").unwrap(),
+        secrets.get("X_ALT_CLIENT_SECRET").unwrap(),
+        BotType::ALTITUDE,
         &pool,
     )
     .await;
@@ -45,7 +47,7 @@ pub async fn checker_job(
 
     let filter = vec!["HBAL"];
     let mut flights: Vec<Flight> = vec![];
-    let mut search_alt = 500;
+    let mut search_alt = 450;
 
     while flights.len() < ranking_count {
         flights = aero_api
@@ -59,68 +61,42 @@ pub async fn checker_job(
     flights.sort_by_key(|f| f.altitude);
     flights.truncate(3);
 
-    let mut db_flights: Vec<Flight> = sqlx::query_as("SELECT * FROM Flights;")
-        .fetch_all(pool)
-        .await
-        .unwrap();
+    let mut db_flights: Vec<Flight> =
+        sqlx::query_as("SELECT * FROM Flights WHERE Flights.ranking = 'ALTITUDE';")
+            .fetch_all(pool)
+            .await
+            .unwrap();
 
     if !db_flights.is_empty() {
         db_flights.sort_by_key(|f| f.altitude);
 
-        if db_flights.first().unwrap() == flights.first().unwrap() {
+        if db_flights.first().unwrap().ident == flights.first().unwrap().ident {
             return Ok(());
         }
 
-        sqlx::query("TRUNCATE TABLE Flights;")
+        sqlx::query("DELETE FROM Flights WHERE Flights.ranking = 'ALTITUDE';")
             .execute(pool)
             .await
             .unwrap();
     }
 
     for f in &flights {
-        sqlx::query("INSERT INTO Flights (ident, altitude) VALUES ($1, $2)")
+        sqlx::query("INSERT INTO Flights (ident, ranking, altitude, groundspeed, origin, destination) VALUES ($1, $2, $3, $4, $5, $6)")
             .bind(&f.ident)
-            .bind(f.altitude)
+            .bind(&f.ranking)
+            .bind(&f.altitude)
+            .bind(&f.groundspeed)
+            .bind(&f.origin)
+            .bind(&f.destination)
             .execute(pool)
             .await
             .unwrap();
     }
 
     let flight = flights.first().unwrap();
-    let link = format!("https://www.flightaware.com/live/flight/{}", flight.ident);
-
-    let alt_readout;
-    let spd_readout;
-
-    if let Some(alt_fl) = flight.altitude {
-        let alt_feet = alt_fl * 100;
-        let alt_meters = alt_feet as f32 * 0.3048;
-        alt_readout = format!("{}ft ({:.2}m)", alt_feet, alt_meters);
-    } else {
-        alt_readout = "N/A".to_string();
-    }
-
-    if let Some(spd_knots) = flight.groundspeed {
-        let spd_kmh = spd_knots as f32 * 1.852;
-        spd_readout = format!("{}kts ({:.2}km/h)", spd_knots, spd_kmh);
-    } else {
-        spd_readout = "N/A".to_string();
-    }
-
-    let origin = flight.origin.clone().unwrap_or("Unknown".to_string());
-    let destination = flight.destination.clone().unwrap_or("Unknown".to_string());
 
     x_api
-        .tweet(format!(
-            "Current highest flight: {}\n\
-            Altitude: {}\n\
-            Groundspeed: {}\n\
-            Origin: {}\n\
-            Destination: {}\n\n\
-            More info:\n{}",
-            flight.ident, alt_readout, spd_readout, origin, destination, link
-        ))
+        .tweet(format_tweet(flight, FormatOrder::ALTITUDE))
         .await;
-
     Ok(())
 }

@@ -11,7 +11,7 @@ use reqwest::{Client, Url};
 use serde_json::json;
 use sqlx::PgPool;
 
-use crate::types::{AuthProvider, Session};
+use crate::types::{AuthProvider, BotType, Session};
 
 #[derive(Debug)]
 pub struct XApi {
@@ -24,6 +24,7 @@ impl XApi {
     pub async fn new_and_authorize(
         client_id: String,
         client_secret: String,
+        bot_type: BotType,
         pool: &PgPool,
     ) -> Self {
         let url = "https://api.twitter.com/2".to_string();
@@ -45,11 +46,13 @@ impl XApi {
                     .expect("Invalid redirect URL"),
                 );
 
-        let sessions: Vec<Session> =
-            sqlx::query_as("SELECT * FROM Sessions WHERE Sessions.provider = 'X';")
-                .fetch_all(pool)
-                .await
-                .unwrap();
+        let sessions: Vec<Session> = sqlx::query_as(
+            "SELECT * FROM Sessions WHERE Sessions.provider = 'X' AND WHERE Sessions.BotType = $1;",
+        )
+        .bind(bot_type)
+        .fetch_all(pool)
+        .await
+        .unwrap();
 
         if !sessions.is_empty() {
             let session = sessions.first().unwrap();
@@ -68,7 +71,6 @@ impl XApi {
             .add_scope(Scope::new("users.read".to_string()))
             .add_scope(Scope::new("tweet.read".to_string()))
             .add_scope(Scope::new("tweet.write".to_string()))
-            .add_scope(Scope::new("offline.access".to_string()))
             .set_pkce_challenge(pkce_code_challenge)
             .url();
 
