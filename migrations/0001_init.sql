@@ -4,7 +4,7 @@ CREATE TYPE BotType AS ENUM ('ALTITUDE', 'GROUNDSPEED');
 
 CREATE TABLE Sessions (
     provider AuthProvider NOT NULL,
-    bot_type: BotType NOT NULL,
+    bot_type BotType NOT NULL,
     access_token TEXT NOT NULL
 );
 
