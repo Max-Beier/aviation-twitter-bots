@@ -1,4 +1,4 @@
-# Twitter/X Bot
+# Aviation Twitter/X Bots
 This is the code of 2 Twitter/X Bots I have writte that reports the current highest and fastests aircrafts in earth's atmosphere. The data is gatherd from Flightaware's [AeroAPI](https://www.flightaware.com/commercial/aeroapi) Feel free to check it out!
 
 ## Bot Accounts
