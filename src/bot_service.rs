@@ -22,7 +22,7 @@ impl shuttle_runtime::Service for BotService {
     async fn bind(self, _addr: std::net::SocketAddr) -> Result<(), shuttle_runtime::Error> {
         let storage: PostgresStorage<Checker> = PostgresStorage::new(self.pool);
 
-        let schedule = Schedule::from_str("0 */10 * ? * * *").expect("Couldn't start scheduler.");
+        let schedule = Schedule::from_str("0 0 */8 ? * * *").expect("Couldn't start scheduler.");
 
         let worker = WorkerBuilder::new("cron-worker")
             .with_storage(storage.clone())
