@@ -87,11 +87,27 @@ pub async fn checker_job(
     }
 
     let flight = flights.first().unwrap();
+    let alt_feet = flight.altitude * 100;
+    let alt_meters = alt_feet as f32 * 0.3048;
+    let gs_kmh = flight.groundspeed as f32 * 1.852;
+    let link = format!("https://www.flightaware.com/live/flight/{}", flight.ident);
 
     x_api
         .tweet(format!(
-            "Current highest flight: {} at FL{}.",
-            flight.ident, flight.altitude
+            "Current highest flight: {}\n\
+            Altitude: {}ft ({:.2}m)\n\
+            Groundspeed: {}kts ({:.2}km/h)\n\
+            Origin: {}\n\
+            Destination: {}\n\
+            More info:\n{}",
+            flight.ident,
+            alt_feet,
+            alt_meters,
+            flight.groundspeed,
+            gs_kmh,
+            flight.origin,
+            flight.destination,
+            link
         ))
         .await;
 

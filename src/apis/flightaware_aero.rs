@@ -61,6 +61,67 @@ impl AeroApi {
                     .unwrap()
                     .as_i64()
                     .unwrap() as i32,
+                groundspeed: value
+                    .get("groundspeed")
+                    .unwrap()
+                    .get("altitude")
+                    .unwrap()
+                    .as_i64()
+                    .unwrap() as i32,
+                origin: format!(
+                    "{}, {} [{}]",
+                    value
+                        .get("origin")
+                        .unwrap()
+                        .get("name")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    value
+                        .get("origin")
+                        .unwrap()
+                        .get("city")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    value
+                        .get("origin")
+                        .unwrap()
+                        .get("code_icao")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string()
+                ),
+                destination: format!(
+                    "{}, {} [{}]",
+                    value
+                        .get("destination")
+                        .unwrap()
+                        .get("name")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    value
+                        .get("destination")
+                        .unwrap()
+                        .get("city")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    value
+                        .get("destination")
+                        .unwrap()
+                        .get("code_icao")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string()
+                ),
             })
             .collect();
 
