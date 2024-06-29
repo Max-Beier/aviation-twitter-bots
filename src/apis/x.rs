@@ -47,7 +47,7 @@ impl XApi {
                 );
 
         let sessions: Vec<Session> = sqlx::query_as(
-            "SELECT * FROM Sessions WHERE Sessions.provider = 'X' AND WHERE Sessions.BotType = $1;",
+            "SELECT * FROM Sessions WHERE Sessions.provider = 'X' AND Sessions.BotType = $1;",
         )
         .bind(&bot_type)
         .fetch_all(pool)
