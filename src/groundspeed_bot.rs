@@ -1,12 +1,10 @@
-use std::time::Duration;
-
 use apalis::{
     postgres::PostgresStorage,
     prelude::{Data, Job},
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use shuttle_runtime::{tokio::time::sleep, Error, SecretStore};
+use shuttle_runtime::{Error, SecretStore};
 
 use crate::{
     apis::{AeroApi, XApi},
