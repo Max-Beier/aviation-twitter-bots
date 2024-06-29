@@ -7,9 +7,9 @@ CREATE TABLE Sessions (
 
 CREATE TABLE Flights (
     ident VARCHAR(255) PRIMARY KEY,
-    altitude INT NOT NULL,
-    groundspeed INT NOT NULL,
-    destination VARCHAR(255) NOT NULL,
-    origin VARCHAR(255) NOT NULL
+    altitude INT,
+    groundspeed INT,
+    destination VARCHAR(255),
+    origin VARCHAR(255)
 );
 

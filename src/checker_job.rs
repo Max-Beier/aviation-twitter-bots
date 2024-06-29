@@ -87,27 +87,38 @@ pub async fn checker_job(
     }
 
     let flight = flights.first().unwrap();
-    let alt_feet = flight.altitude * 100;
-    let alt_meters = alt_feet as f32 * 0.3048;
-    let gs_kmh = flight.groundspeed as f32 * 1.852;
     let link = format!("https://www.flightaware.com/live/flight/{}", flight.ident);
+
+    let alt_readout;
+    let spd_readout;
+
+    if let Some(alt_fl) = flight.altitude {
+        let alt_feet = alt_fl * 100;
+        let alt_meters = alt_feet as f32 * 0.3048;
+        alt_readout = format!("{}ft ({:.2}m)", alt_feet, alt_meters);
+    } else {
+        alt_readout = "N/A".to_string();
+    }
+
+    if let Some(spd_knots) = flight.groundspeed {
+        let spd_kmh = spd_knots as f32 * 1.852;
+        spd_readout = format!("{}kts ({:.2}km/h)", spd_knots, spd_kmh);
+    } else {
+        spd_readout = "N/A".to_string();
+    }
+
+    let origin = flight.origin.clone().unwrap_or("Unknown".to_string());
+    let destination = flight.destination.clone().unwrap_or("Unknown".to_string());
 
     x_api
         .tweet(format!(
             "Current highest flight: {}\n\
-            Altitude: {}ft ({:.2}m)\n\
-            Groundspeed: {}kts ({:.2}km/h)\n\
+            Altitude: {}\n\
+            Groundspeed: {}\n\
             Origin: {}\n\
-            Destination: {}\n\
+            Destination: {}\n\n\
             More info:\n{}",
-            flight.ident,
-            alt_feet,
-            alt_meters,
-            flight.groundspeed,
-            gs_kmh,
-            flight.origin,
-            flight.destination,
-            link
+            flight.ident, alt_readout, spd_readout, origin, destination, link
         ))
         .await;
 

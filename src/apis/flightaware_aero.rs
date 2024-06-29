@@ -31,97 +31,64 @@ impl AeroApi {
             .get(format!("{}/flights/search?query={}", &self.url, params))
             .header("x-apikey", &self.api_key)
             .send()
-            .await
-            .unwrap();
+            .await?;
 
-        let response_json = response.json::<Value>().await.unwrap();
+        let response_json = response.json::<Value>().await?;
 
-        let flights: Vec<Flight> = response_json
-            .get("flights")
-            .unwrap()
+        let flights = match response_json.get("flights") {
+            Some(flights) => flights,
+            None => return Ok(vec![]),
+        };
+
+        let flights: Vec<Flight> = flights
             .as_array()
             .unwrap()
             .iter()
             .filter(|value| {
-                let ident = value.get("ident").unwrap().as_str().unwrap().to_string();
-                for f in filter {
-                    if ident.starts_with(f) {
-                        return false;
-                    }
+                if let Some(ident) = value.get("ident").and_then(|v| v.as_str()) {
+                    !filter.iter().any(|&f| ident.starts_with(f))
+                } else {
+                    false
                 }
-
-                true
             })
-            .map(|value| Flight {
-                ident: value.get("ident").unwrap().as_str().unwrap().to_string(),
-                altitude: value
+            .map(|value| {
+                let ident = value.get("ident").unwrap().as_str().unwrap().to_string();
+                let altitude = value
                     .get("last_position")
                     .unwrap()
                     .get("altitude")
                     .unwrap()
                     .as_i64()
-                    .unwrap() as i32,
-                groundspeed: value
+                    .map(|i| i as i32);
+                let groundspeed = value
                     .get("last_position")
                     .unwrap()
                     .get("groundspeed")
                     .unwrap()
                     .as_i64()
-                    .unwrap() as i32,
-                origin: format!(
-                    "{}, {} [{}]",
-                    value
-                        .get("origin")
-                        .unwrap()
-                        .get("name")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    value
-                        .get("origin")
-                        .unwrap()
-                        .get("city")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    value
-                        .get("origin")
-                        .unwrap()
-                        .get("code_icao")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
-                ),
-                destination: format!(
-                    "{}, {} [{}]",
-                    value
-                        .get("destination")
-                        .unwrap()
-                        .get("name")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    value
-                        .get("destination")
-                        .unwrap()
-                        .get("city")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    value
-                        .get("destination")
-                        .unwrap()
-                        .get("code_icao")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
-                ),
+                    .map(|i| i as i32);
+
+                let origin = value.get("origin").and_then(|origin| {
+                    let name = origin.get("name")?.as_str()?;
+                    let city = origin.get("city")?.as_str()?;
+                    let code_icao = origin.get("code_icao")?.as_str()?;
+                    Some(format!("{}, {} [{}]", name, city, code_icao))
+                });
+
+                let destination = value.get("destination").and_then(|destination| {
+                    let name = destination.get("name")?.as_str()?;
+                    let city = destination.get("city")?.as_str()?;
+                    let code_icao = destination.get("code_icao")?.as_str()?;
+                    Some(format!("{}, {} [{}]", name, city, code_icao))
+                });
+
+                Flight {
+                    ident,
+                    altitude,
+                    groundspeed,
+                    origin,
+                    destination,
+                }
             })
             .collect();
 
