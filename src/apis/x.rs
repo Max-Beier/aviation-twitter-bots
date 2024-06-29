@@ -41,7 +41,7 @@ impl XApi {
         let auth_client =
             BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
                 .set_redirect_uri(
-                    RedirectUrl::new("http://localhost:8000".to_string())
+                    RedirectUrl::new("http://localhost:8000/callback".to_string())
                         .expect("Invalid redirect URL"),
                 );
 
@@ -77,7 +77,7 @@ impl XApi {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
-            let listener = TcpListener::bind("localhost:8000").unwrap();
+            let listener = TcpListener::bind("localhost:8000/callback").unwrap();
 
             if let Ok((mut stream, _)) = listener.accept() {
                 let mut reader = BufReader::new(&mut stream);
@@ -86,7 +86,8 @@ impl XApi {
                 reader.read_line(&mut request_line).unwrap();
 
                 let redirect_url = request_line.split_whitespace().nth(1).unwrap();
-                let url = Url::parse(&("http://localhost".to_string() + redirect_url)).unwrap();
+                let url =
+                    Url::parse(&("http://localhost/callback".to_string() + redirect_url)).unwrap();
 
                 let code = url
                     .query_pairs()
