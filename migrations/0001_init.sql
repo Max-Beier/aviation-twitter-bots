@@ -10,6 +10,6 @@ CREATE TABLE Flights (
     altitude INT NOT NULL,
     groundspeed INT NOT NULL,
     destination VARCHAR(255) NOT NULL,
-    origin: VARCHAR(255) NOT NULL
+    origin VARCHAR(255) NOT NULL
 );
 
