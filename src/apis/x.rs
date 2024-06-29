@@ -49,7 +49,7 @@ impl XApi {
         let sessions: Vec<Session> = sqlx::query_as(
             "SELECT * FROM Sessions WHERE Sessions.provider = 'X' AND WHERE Sessions.BotType = $1;",
         )
-        .bind(bot_type)
+        .bind(&bot_type)
         .fetch_all(pool)
         .await
         .unwrap();
@@ -74,7 +74,7 @@ impl XApi {
             .set_pkce_challenge(pkce_code_challenge)
             .url();
 
-        println!("Browse to: {}", auth_url);
+        println!("[{:?}] Browse to: {}", bot_type, auth_url);
 
         let (tx, mut rx) = mpsc::channel(1);
 
