@@ -62,9 +62,9 @@ impl AeroApi {
                     .as_i64()
                     .unwrap() as i32,
                 groundspeed: value
-                    .get("groundspeed")
+                    .get("last_position")
                     .unwrap()
-                    .get("altitude")
+                    .get("groundspeed")
                     .unwrap()
                     .as_i64()
                     .unwrap() as i32,

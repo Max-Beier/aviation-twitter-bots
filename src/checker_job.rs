@@ -13,7 +13,7 @@ use crate::{
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Checker {
-    time: DateTime<Utc>,
+    pub time: DateTime<Utc>,
 }
 
 impl From<DateTime<Utc>> for Checker {

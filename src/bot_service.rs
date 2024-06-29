@@ -3,10 +3,11 @@ use std::str::FromStr;
 use apalis::{
     cron::{CronStream, Schedule},
     postgres::PostgresStorage,
-    prelude::{Monitor, WorkerBuilder, WorkerFactoryFn},
+    prelude::{Data, Monitor, WorkerBuilder, WorkerFactoryFn},
     utils::TokioExecutor,
 };
 
+use chrono::Utc;
 use shuttle_runtime::SecretStore;
 use sqlx::PgPool;
 
@@ -27,14 +28,21 @@ impl shuttle_runtime::Service for BotService {
         let worker = WorkerBuilder::new("cron-worker")
             .with_storage(storage.clone())
             .stream(CronStream::new(schedule).into_stream())
-            .data((storage, self.secrets))
+            .data((storage.clone(), self.secrets.clone()))
             .build_fn(checker_job);
 
-        Monitor::<TokioExecutor>::new()
-            .register(worker)
-            .run()
-            .await
-            .expect("Unable to start worker.");
+        let monitor = Monitor::<TokioExecutor>::new().register(worker);
+
+        let initial_checker_job = checker_job(
+            Checker::from(Utc::now()),
+            Data::new((storage, self.secrets)),
+        )
+        .await;
+        if let Err(e) = initial_checker_job {
+            eprintln!("Initial checker job failed: {:?}", e);
+        }
+
+        monitor.run().await.expect("Unable to start worker.");
 
         Ok(())
     }
