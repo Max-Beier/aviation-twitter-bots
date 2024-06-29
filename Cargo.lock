@@ -624,22 +624,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
-name = "earth-highest-aircraft"
-version = "0.1.0"
-dependencies = [
- "apalis",
- "chrono",
- "oauth2",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "shuttle-runtime",
- "shuttle-shared-db",
- "sqlx",
- "warp",
-]
-
-[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3348,6 +3332,22 @@ dependencies = [
  "thiserror",
  "url",
  "utf-8",
+]
+
+[[package]]
+name = "twitter-aviation-bots"
+version = "0.1.0"
+dependencies = [
+ "apalis",
+ "chrono",
+ "oauth2",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "shuttle-runtime",
+ "shuttle-shared-db",
+ "sqlx",
+ "warp",
 ]
 
 [[package]]
