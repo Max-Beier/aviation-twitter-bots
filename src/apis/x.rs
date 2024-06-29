@@ -41,7 +41,7 @@ impl XApi {
             BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
                 .set_redirect_uri(
                     RedirectUrl::new(
-                        "https://twitter-aviation-bots.shuttleapp.rs/callback".to_string(),
+                        "http://twitter-aviation-bots.shuttleapp.rs/callback".to_string(),
                     )
                     .expect("Invalid redirect URL"),
                 );
