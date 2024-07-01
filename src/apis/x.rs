@@ -5,7 +5,8 @@ use shuttle_runtime::tokio::{io::BufReader, net::TcpListener};
 
 use oauth2::{
     basic::BasicClient, reqwest::async_http_client, AuthUrl, AuthorizationCode, ClientId,
-    ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope, TokenResponse,
+    TokenUrl,
 };
 use reqwest::{Client, Url};
 use serde_json::json;
@@ -57,9 +58,30 @@ impl XApi {
         if !sessions.is_empty() {
             let session = sessions.first().unwrap();
 
+            let mut refresh_token = RefreshToken::new(session.refresh_token.clone());
+
+            let tokens = auth_client
+                .exchange_refresh_token(&refresh_token)
+                .request_async(async_http_client)
+                .await
+                .unwrap();
+
+            let access_token = tokens.access_token().secret().to_string();
+            if let Some(new_refresh_token) = tokens.refresh_token() {
+                refresh_token = new_refresh_token.clone();
+            }
+
+            sqlx::query("UPDATE Sessions SET access_token = $1, refresh_token = $2 WHERE provider = 'X' AND bot_type = $3;")
+            .bind(&access_token)
+            .bind(refresh_token.secret().to_string())
+            .bind(bot_type)
+            .execute(pool)
+            .await
+            .unwrap();
+
             return Self {
                 client: Client::new(),
-                access_token: session.access_token.to_string(),
+                access_token,
                 url,
             };
         }
@@ -71,6 +93,7 @@ impl XApi {
             .add_scope(Scope::new("users.read".to_string()))
             .add_scope(Scope::new("tweet.read".to_string()))
             .add_scope(Scope::new("tweet.write".to_string()))
+            .add_scope(Scope::new("offline.access".to_string()))
             .set_pkce_challenge(pkce_code_challenge)
             .url();
 
@@ -126,11 +149,13 @@ impl XApi {
             .unwrap();
 
         let access_token = tokens.access_token().secret().to_string();
+        let refresh_token = tokens.refresh_token().unwrap().secret().to_string();
 
-        sqlx::query("INSERT INTO Sessions (provider, bot_type, access_token) VALUES ($1, $2, $3);")
+        sqlx::query("INSERT INTO Sessions (provider, bot_type, access_token, refresh_token) VALUES ($1, $2, $3, $4);")
             .bind(AuthProvider::X)
             .bind(bot_type)
             .bind(&access_token)
+            .bind(&refresh_token)
             .execute(pool)
             .await
             .unwrap();
