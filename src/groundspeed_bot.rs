@@ -32,7 +32,7 @@ pub async fn groundspeed_job(
     data: Data<(PostgresStorage<Checker>, SecretStore)>,
 ) -> Result<(), Error> {
     // Need for first time oauth - first run
-    shuttle_runtime::tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+    // shuttle_runtime::tokio::time::sleep(std::time::Duration::from_secs(60)).await;
 
     let pool = data.0.pool();
     let secrets = &data.1;
