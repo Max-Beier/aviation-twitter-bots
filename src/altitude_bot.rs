@@ -43,20 +43,14 @@ pub async fn altitude_job(
     )
     .await;
 
-    let ranking_count = 3;
-
     let filter = vec!["HBAL"];
-    let mut flights: Vec<Flight> = vec![];
-    let mut search_alt = 450;
+    let mut flights: Vec<Flight>;
+    let search_alt = 450;
 
-    while flights.len() < ranking_count {
-        flights = aero_api
-            .get_flights_above_fl(search_alt, &filter)
-            .await
-            .unwrap();
-
-        search_alt -= 10;
-    }
+    flights = aero_api
+        .get_flights_above_fl(search_alt, &filter)
+        .await
+        .unwrap();
 
     flights.sort_by_key(|f| f.altitude);
     flights.truncate(3);
